@@ -11,6 +11,7 @@ using System;
 public class Container : MonoBehaviour
 {
     public Vector3 containerPosition;
+    private MeshData meshData = new MeshData();
 
     private MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
@@ -32,7 +33,37 @@ public class Container : MonoBehaviour
 
     public void GenerateMesh()
     {
+        meshData.ClearData();
 
+        Vector3 blockPos = new Vector3(0,0,0);
+        Voxel block = new Voxel() { ID = 1 };
+
+        int counter = 0;
+        Vector3[] faceVertices = new Vector3[4];
+        Vector2[] faceUvs = new Vector2[4];
+
+        //iterate through each face of the voxel
+        for (int f = 0; f < 6; f++)
+        {
+            //iterate through each vertex of the face
+            for (int v = 0; v < 4; v++)
+            {
+                faceVertices[v] = voxelVertices[voxelVertexIndex[f, v]] + blockPos;
+                faceUvs[v] = voxelUVs[v];
+            }
+            //add the face vertices and uvs to the mesh data
+            for (int i = 0; i < 4; i++)
+            {
+                meshData.vertices[counter * 4 + i] = faceVertices[i];
+                meshData.uvs[counter * 4 + i] = faceUvs[i];
+            }
+            //add the face triangles to the mesh data
+            for (int t = 0; t < 6; t++)
+            {
+                meshData.triangles[counter * 6 + t] = counter * 4 + voxelTris[f, t];
+            }
+            counter++;
+        }
     }
 
     public void UploadMesh()
