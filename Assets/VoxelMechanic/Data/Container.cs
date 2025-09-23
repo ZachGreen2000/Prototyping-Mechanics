@@ -11,6 +11,8 @@ using System;
 public class Container : MonoBehaviour
 {
     public Vector3 containerPosition;
+
+    private Dictionary<Vector3, Voxel> data;
     private MeshData meshData = new MeshData();
 
     private MeshFilter meshFilter;
@@ -20,10 +22,16 @@ public class Container : MonoBehaviour
     public void Initialise(Material mat, Vector3 pos) // called to set up the container
     {
         ConfigComponents();
+        data = new Dictionary<Vector3, Voxel>();
         meshRenderer.sharedMaterial = mat;
         containerPosition = pos;
     }
-    
+
+    public void ClearData() // called to clear the voxel data
+    {
+        data.Clear();
+    }   
+
     public void ConfigComponents() // called to get the components
     {
         meshFilter = GetComponent<MeshFilter>();
@@ -42,34 +50,77 @@ public class Container : MonoBehaviour
         Vector3[] faceVertices = new Vector3[4];
         Vector2[] faceUvs = new Vector2[4];
 
-        //iterate through each face of the voxel
-        for (int f = 0; f < 6; f++)
+        foreach (KeyValuePair<Vector3, Voxel> item in data) // iterate through each voxel in the container
         {
-            //iterate through each vertex of the face
-            for (int v = 0; v < 4; v++)
+            if (item.Value.ID == 0) { continue; } // skip empty voxels
+            blockPos = item.Key;
+            block = item.Value;
+
+            //iterate through each face of the voxel
+            for (int f = 0; f < 6; f++)
             {
-                faceVertices[v] = voxelVertices[voxelVertexIndex[f, v]] + blockPos;
-                faceUvs[v] = voxelUVs[v];
+                if (this[blockPos + voxelFaceChecks[f]].isSolid) { continue; } // skip faces that are solid as dont need to draw it
+
+                //iterate through each vertex of the face
+                for (int v = 0; v < 4; v++)
+                {
+                    faceVertices[v] = voxelVertices[voxelVertexIndex[f, v]] + blockPos;
+                    faceUvs[v] = voxelUVs[v];
+                }
+                //add the face vertices and uvs to the mesh data
+                int vertIndex = meshData.vertices.Count;
+                for (int i = 0; i < 4; i++)
+                {
+                    meshData.vertices.Add(faceVertices[i]);
+                    meshData.uvs.Add(faceUvs[i]);
+                }
+                //add the face triangles to the mesh data
+                for (int t = 0; t < 6; t++)
+                {
+                    meshData.triangles.Add(vertIndex + voxelTris[f, t]);
+                }
+                counter++;
             }
-            //add the face vertices and uvs to the mesh data
-            for (int i = 0; i < 4; i++)
-            {
-                meshData.vertices[counter * 4 + i] = faceVertices[i];
-                meshData.uvs[counter * 4 + i] = faceUvs[i];
-            }
-            //add the face triangles to the mesh data
-            for (int t = 0; t < 6; t++)
-            {
-                meshData.triangles[counter * 6 + t] = counter * 4 + voxelTris[f, t];
-            }
-            counter++;
         }
     }
 
-    public void UploadMesh()
+    public void UploadMesh() // called to upload the mesh data to the mesh
     {
+        meshData.UploadMesh();
 
+        if (meshRenderer == null) { ConfigComponents(); } // in case this is called before config components
+
+        meshFilter.mesh = meshData.mesh;
+        if (meshData.vertices.Count > 3) { meshCollider.sharedMesh = meshData.mesh; } // only set the collider if there are enough vertices
     }
+
+    public Voxel this[Vector3 index] // indexer to get or set voxel data
+    {
+        get
+        {
+            if (data.ContainsKey(index))
+            {
+                return data[index];
+            }
+            else
+            {
+                return emptyVoxel;
+            }
+        }
+        set
+        {
+            if (data.ContainsKey(index))
+            {
+                data[index] = value;
+            }
+            else
+            {
+                data.Add(index, value);
+            }
+        }
+    }
+
+    public static Voxel emptyVoxel = new Voxel() { ID = 0 }; // static empty voxel for easy access
 
     // this section is for storing mesh data
     #region Mesh Data
@@ -77,9 +128,9 @@ public class Container : MonoBehaviour
     {
         public Mesh mesh;
         // using arrays for better performance over lists
-        public Vector3[] vertices;
-        public int[] triangles;
-        public Vector2[] uvs;
+        public List<Vector3> vertices;
+        public List<int> triangles;
+        public List<Vector2> uvs;
 
         public bool Initialised;
 
@@ -87,18 +138,18 @@ public class Container : MonoBehaviour
         {
             if (!Initialised)
             {
-                vertices = new Vector3[24];
-                triangles = new int[36];
-                uvs = new Vector2[24];
+                vertices = new List<Vector3>();
+                triangles = new List<int>();
+                uvs = new List<Vector2>();
 
                 Initialised = true;
                 mesh = new Mesh();
             }
             else
             {
-                Array.Clear(vertices, 0, vertices.Length);
-                Array.Clear(triangles, 0, triangles.Length);
-                Array.Clear(uvs, 0, uvs.Length);
+                vertices.Clear();
+                triangles.Clear();
+                uvs.Clear();
                 mesh.Clear();
             }
         }
@@ -134,32 +185,42 @@ public class Container : MonoBehaviour
         new Vector3(0.0f, 0.0f, 1.0f)  // 7
     };
 
+    static readonly Vector3[] voxelFaceChecks = new Vector3[6] // 6 faces in a cube
+    {
+        new Vector3(0.0f, 0.0f, -1.0f), // Front
+        new Vector3(0.0f, 0.0f, 1.0f),  // Back
+        new Vector3(0.0f, 1.0f, 0.0f),  // Top
+        new Vector3(0.0f, -1.0f, 0.0f), // Bottom
+        new Vector3(-1.0f, 0.0f, 0.0f), // Left
+        new Vector3(1.0f, 0.0f, 0.0f)   // Right  
+    };
+
     static readonly int[,] voxelVertexIndex = new int[6, 4] // 6 faces, 4 vertices per face
     {
-        {0, 1, 2, 3}, 
-        {4, 5, 6, 7}, 
-        {4, 0, 6, 2}, 
-        {5, 1, 7, 3}, 
-        {0, 1, 4, 5}, 
-        {2, 3, 6, 7}  
+        {0, 1, 2, 3}, // Front
+        {7, 6, 5, 4}, // Back
+        {3, 2, 5, 4}, // Top
+        {0, 1, 6, 7}, // Bottom
+        {0, 3, 4, 7}, // Left
+        {1, 2, 5, 6}  // Right  
     };
 
     static readonly Vector2[] voxelUVs = new Vector2[4] // 4 UVs per face
     {
         new Vector2(0.0f, 0.0f), 
-        new Vector2(0.0f, 0.1f), 
         new Vector2(1.0f, 0.0f), 
-        new Vector2(1.0f, 1.0f)  
+        new Vector2(1.0f, 1.0f), 
+        new Vector2(0.0f, 1.0f)  
     };
 
     static readonly int[,] voxelTris = new int[6, 6] // 6 faces, 2 triangles per face, 3 vertices per triangle
     {
-        {0, 2, 3, 0, 3, 1}, 
-        {0, 1, 2, 1, 3, 2}, 
-        {0, 2, 3, 0, 3, 1},
-        {0, 1, 2, 1, 3, 2},
-        {0, 1, 2, 1, 3, 2},
-        {0, 2, 3, 0, 3, 1}
+        {0, 2, 1, 0, 3, 2}, // Front  
+        {0, 1, 2, 0, 2, 3}, // Back   
+        {0, 2, 1, 0, 3, 2}, // Top    
+        {0, 1, 2, 0, 2, 3}, // Bottom 
+        {0, 2, 1, 0, 3, 2}, // Left   
+        {0, 1, 2, 0, 2, 3}  // Right  
     };
     #endregion
 }
