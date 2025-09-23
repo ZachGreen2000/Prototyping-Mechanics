@@ -4,9 +4,20 @@ public class WorldManager : MonoBehaviour
 {
     public Material worldMaterial;
     private Container container;
+
+    public VoxelColour[] worldColors;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        if (Instance != this && Instance != null)
+        {
+            Destroy(this);
+        }
+        else 
+        {
+            _instance = this;
+        }
+
         GameObject cont = new GameObject("Container");
         cont.transform.parent = transform;
         container = cont.AddComponent<Container>();
@@ -29,6 +40,18 @@ public class WorldManager : MonoBehaviour
         container.UploadMesh();
     }
 
+    private static WorldManager _instance; // Singleton instance
+    public static WorldManager Instance // Public accessor
+    { 
+        get 
+        {
+            if (_instance == null)
+            {
+                _instance = FindObjectOfType<WorldManager>();// Find existing instance in the scene 
+            }
+            return _instance; 
+        }
+    }
     // Update is called once per frame
     void Update()
     {

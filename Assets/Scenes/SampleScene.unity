@@ -462,6 +462,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorldManager
   worldMaterial: {fileID: 2100000, guid: ca51ad5c837852644bd64302ff5e115b, type: 2}
+  worldColors:
+  - color: {r: 0.36966002, g: 0.6272108, b: 0.6698113, a: 0}
+    metallic: 1
+    smoothness: 0.75
 --- !u!4 &1508554409
 Transform:
   m_ObjectHideFlags: 0
