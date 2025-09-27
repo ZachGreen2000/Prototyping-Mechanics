@@ -134,6 +134,24 @@ public class Container : MonoBehaviour
 
     public static Voxel emptyVoxel = new Voxel() { ID = 0 }; // static empty voxel for easy access
 
+    public ChunkData GetChunkData(Vector2Int chunkPos)
+    {
+        var data = new ChunkData { chunkPos = chunkPos, voxels = new List<VoxelData>() };
+        foreach (var kvp in this.data) // Assuming you store voxels in a dictionary
+        {
+            data.voxels.Add(new VoxelData { position = kvp.Key, id = kvp.Value.ID });
+        }
+        return data;
+    }
+
+    public void LoadChunkData(ChunkData data)
+    {
+        foreach (var v in data.voxels)
+        {
+            this[v.position] = new Voxel { ID = v.id };
+        }
+    }
+
     // this section is for storing mesh data
     #region Mesh Data
     public struct MeshData
