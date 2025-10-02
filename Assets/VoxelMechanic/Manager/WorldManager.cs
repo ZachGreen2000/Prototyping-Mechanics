@@ -13,9 +13,14 @@ public class WorldManager : MonoBehaviour
     public VoxelColour[] worldColors;
 
     // chunk variables
-    private int chunkX = 4;
-    private int chunkY = 8;
-    private int chunkZ = 4;
+    [SerializeField] private int chunkX = 4;
+    [SerializeField] private int chunkY = 8;
+    [SerializeField] private int chunkZ = 4;
+
+    //perlin noise variables
+    private float noiseScale = 0.1f;
+    private float heightMultiplier = 6f;
+    private float noiseOffset = 100f;
 
     // dictionairy to hold chunks
     private Dictionary<Vector2Int, Container> chunks = new Dictionary<Vector2Int, Container>();
@@ -38,6 +43,7 @@ public class WorldManager : MonoBehaviour
                 Vector2Int chunkPos = new Vector2Int(cx, cz);
                 GameObject cont = new GameObject("Chunk_" + cx + "_" + cz);
                 cont.transform.parent = transform;
+                cont.transform.position = new Vector3(cx * 16, 0, cz * 16);
                 Container container = cont.AddComponent<Container>();
                 container.Initialise(worldMaterial, cont.transform.position);
 
@@ -46,8 +52,15 @@ public class WorldManager : MonoBehaviour
                 {
                     for (int z = 0; z < 16; z++)
                     {
-                        int randomHeight = UnityEngine.Random.Range(1, chunkY);
-                        for (int y = 0; y < randomHeight; y++)
+                        // Calculate Perlin noise-based height
+                        float xCoord = (cx * 16 + x) * noiseScale + noiseOffset;
+                        float zCoord = (cz * 16 + z) * noiseScale + noiseOffset;
+                        float perlinValue = Mathf.PerlinNoise(xCoord, zCoord);
+                        int height = Mathf.FloorToInt(perlinValue * heightMultiplier);
+
+                        // Clamp height to chunkY
+                        height = Mathf.Clamp(height, 1, chunkY);
+                        for (int y = 0; y < height; y++)
                         {
                             container[new Vector3(x, y, z)] = new Voxel() { ID = 1 };
                         }
