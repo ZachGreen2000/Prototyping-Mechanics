@@ -16,6 +16,7 @@ public class WorldManager : MonoBehaviour
     [SerializeField] private int chunkX = 4;
     [SerializeField] private int chunkY = 8;
     [SerializeField] private int chunkZ = 4;
+    [SerializeField] private int chunkSize = 16;
 
     //perlin noise variables
     private float noiseScale = 0.1f;
@@ -43,18 +44,18 @@ public class WorldManager : MonoBehaviour
                 Vector2Int chunkPos = new Vector2Int(cx, cz);
                 GameObject cont = new GameObject("Chunk_" + cx + "_" + cz);
                 cont.transform.parent = transform;
-                cont.transform.position = new Vector3(cx * 16, 0, cz * 16);
+                cont.transform.position = new Vector3(cx * chunkSize, 0, cz * chunkSize);
                 Container container = cont.AddComponent<Container>();
                 container.Initialise(worldMaterial, cont.transform.position);
 
                 // Add some voxels to the chunk
-                for (int x = 0; x < 16; x++)
+                for (int x = 0; x < chunkSize; x++)
                 {
-                    for (int z = 0; z < 16; z++)
+                    for (int z = 0; z < chunkSize; z++)
                     {
                         // Calculate Perlin noise-based height
-                        float xCoord = (cx * 16 + x) * noiseScale + noiseOffset;
-                        float zCoord = (cz * 16 + z) * noiseScale + noiseOffset;
+                        float xCoord = (cx * chunkSize + x) * noiseScale + noiseOffset;
+                        float zCoord = (cz * chunkSize + z) * noiseScale + noiseOffset;
                         float perlinValue = Mathf.PerlinNoise(xCoord, zCoord);
                         int height = Mathf.FloorToInt(perlinValue * heightMultiplier);
 
