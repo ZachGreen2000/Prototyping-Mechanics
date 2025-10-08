@@ -38,8 +38,8 @@ public class Container : MonoBehaviour
         meshRenderer = GetComponent<MeshRenderer>();
         meshCollider = GetComponent<MeshCollider>();
     }
-
-    public void GenerateMeshMarchingCubes(int sizeX, int sizeY, int sizeZ) // called to generate the mesh data from the voxel data using marching cubes
+    // this function generates a procedural terrain of voxels using marching cubes from the voxel data structure
+    public void GenerateMeshMarchingCubes(int sizeX, int sizeY, int sizeZ) 
     {
         meshData.ClearData();
         Vector3 blockPos = new Vector3(0, 0, 0);
@@ -74,7 +74,7 @@ public class Container : MonoBehaviour
                     // Calculate cube index
                     int cubeIndex = 0;
                     for (int i = 0; i < 8; i++)
-                        if (cube[i] < 0) cubeIndex |= 1 << i;
+                        if (cube[i] < 0) cubeIndex |= (1 << i);
 
                     // No triangles for this cube
                     if (edgeTable[cubeIndex] == 0)
@@ -127,7 +127,7 @@ public class Container : MonoBehaviour
             }
         }
     }
-
+    // this function generates a procedural terrain of cubes/voxels when not using marching cubes
     public void GenerateMesh() // called to generate the mesh data from the voxel data
     {
         meshData.ClearData();
@@ -240,6 +240,7 @@ public class Container : MonoBehaviour
             this[v.position] = new Voxel { ID = v.id };
         }
     }
+
     // this section is for marching cubes to get inside or outside of a voxel
     private float GetDensity(Vector3 pos)
     {
@@ -247,10 +248,13 @@ public class Container : MonoBehaviour
         Vector3 worldPos = containerPosition + pos;
 
         // Find which chunk this worldPos belongs to
+        int chunkSize = WorldManager.Instance.chunkSize;
         Vector2Int chunkCoord = new Vector2Int(
-            Mathf.FloorToInt(worldPos.x / WorldManager.Instance.chunkSize),
-            Mathf.FloorToInt(worldPos.z / WorldManager.Instance.chunkSize)
+            (int)(worldPos.x / chunkSize),
+            (int)(worldPos.z / chunkSize)
         );
+        if (worldPos.x < 0) chunkCoord.x -= 1;
+        if (worldPos.z < 0) chunkCoord.y -= 1;
         Container neighborChunk;
         if (WorldManager.Instance.chunks.TryGetValue(chunkCoord, out neighborChunk))
         {
@@ -259,6 +263,9 @@ public class Container : MonoBehaviour
                 return -1f;
         }
         return 1f;
+        /*Vector3 center = new Vector3(8, 8, 8);
+        float radius = 7f;
+        return (pos - center).magnitude - radius;*/
     }
 
     // this section is for storing mesh data
@@ -678,10 +685,12 @@ public class Container : MonoBehaviour
     // Linear interpolation between two points
     private Vector3 VertexInterp(Vector3 p1, Vector3 p2, float valp1, float valp2)
     {
-        if (Mathf.Abs(valp1) < 0.00001) return p1;
-        if (Mathf.Abs(valp2) < 0.00001) return p2;
-        if (Mathf.Abs(valp1 - valp2) < 0.00001) return p1;
-        float mu = (0 - valp1) / (valp2 - valp1);
+        float isoLevel = 0f;
+        if (Mathf.Abs(isoLevel - valp1) < 0.00001f) return p1;
+        if (Mathf.Abs(isoLevel - valp2) < 0.00001f) return p2;
+        if (Mathf.Abs(valp1 - valp2) < 0.00001f) return p1;
+
+        float mu = (isoLevel - valp1) / (valp2 - valp1);
         return p1 + mu * (p2 - p1);
     }
 
