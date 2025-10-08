@@ -16,7 +16,7 @@ public class WorldManager : MonoBehaviour
     [SerializeField] private int chunkX = 4;
     [SerializeField] private int chunkY = 8;
     [SerializeField] private int chunkZ = 4;
-    [SerializeField] private int chunkSize = 16;
+    public int chunkSize = 16;
 
     //perlin noise variables
     private float noiseScale = 0.1f;
@@ -24,7 +24,7 @@ public class WorldManager : MonoBehaviour
     private float noiseOffset = 100f;
 
     // dictionairy to hold chunks
-    private Dictionary<Vector2Int, Container> chunks = new Dictionary<Vector2Int, Container>();
+    public Dictionary<Vector2Int, Container> chunks = new Dictionary<Vector2Int, Container>();
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -32,7 +32,7 @@ public class WorldManager : MonoBehaviour
         {
             Destroy(this);
         }
-        else 
+        else
         {
             _instance = this;
         }
@@ -56,7 +56,9 @@ public class WorldManager : MonoBehaviour
                         // Calculate Perlin noise-based height
                         float xCoord = (cx * chunkSize + x) * noiseScale + noiseOffset;
                         float zCoord = (cz * chunkSize + z) * noiseScale + noiseOffset;
+                        float flatness = 0.4f;
                         float perlinValue = Mathf.PerlinNoise(xCoord, zCoord);
+                        if (perlinValue < flatness) perlinValue = flatness; // Apply flatness threshold
                         int height = Mathf.FloorToInt(perlinValue * heightMultiplier);
 
                         // Clamp height to chunkY
@@ -68,13 +70,17 @@ public class WorldManager : MonoBehaviour
                     }
                 }
 
-                container.GenerateMesh();
-                container.UploadMesh();
+                chunks.Add(chunkPos, container);// Add chunk to dictionary
 
-                chunks.Add(chunkPos, container);
 
             }
-        }    
+        }
+        // Generate and upload meshes for all chunks
+        foreach (var chunk in chunks.Values)
+        {
+            chunk.GenerateMeshMarchingCubes(chunkSize, chunkY, chunkSize);// Generate mesh for each chunk
+            chunk.UploadMesh();
+        }
     }
 
     private static WorldManager _instance; // Singleton instance
