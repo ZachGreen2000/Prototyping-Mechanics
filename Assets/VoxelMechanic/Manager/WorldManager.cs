@@ -23,19 +23,18 @@ public class WorldManager : MonoBehaviour
     private float heightMultiplier = 6f;
     private float noiseOffset = 100f;
 
-    // dictionairy to hold chunks
-    public Dictionary<Vector2Int, Container> chunks = new Dictionary<Vector2Int, Container>();
+    public bool boxWorld; // toggle between box world and smooth world
+
+    public Dictionary<Vector2Int, Container> chunks; // Dictionary to hold chunks with their positions as keys
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        if (Instance != this && Instance != null)
-        {
-            Destroy(this);
-        }
-        else
-        {
-            _instance = this;
-        }
+#if UNITY_EDITOR
+    if (!Application.isPlaying)
+        return; // safe default during editor reload
+#endif
+        chunks = new Dictionary<Vector2Int, Container>();
         // generate chunks
         for (int cx = 0; cx < chunkX; cx++)
         {
@@ -69,31 +68,35 @@ public class WorldManager : MonoBehaviour
                         }
                     }
                 }
-
+                if (boxWorld)
+                {
+                    container.GenerateMesh();
+                    container.UploadMesh();
+                }
                 chunks.Add(chunkPos, container);// Add chunk to dictionary
-
-
             }
         }
-        // Generate and upload meshes for all chunks
-        foreach (var chunk in chunks.Values)
+        if (!boxWorld)
         {
-            chunk.GenerateMeshMarchingCubes(chunkSize, chunkY, chunkSize);// Generate mesh for each chunk
-            chunk.UploadMesh();
+            // Generate and upload meshes for all chunks
+            foreach (var chunk in chunks.Values)
+            {
+                chunk.GenerateMeshMarchingCubes(chunkSize, chunkY, chunkSize);// Generate mesh for each chunk
+                chunk.UploadMesh();
+            }
         }
     }
 
-    private static WorldManager _instance; // Singleton instance
-    public static WorldManager Instance // Public accessor
-    { 
-        get 
+    public static WorldManager Instance { get; private set; }// Singleton instance that can be accessed from other scripts but not modified
+    
+    void Awake()
+    {
+        if (Instance != this && Instance != null)
         {
-            if (_instance == null)
-            {
-                _instance = FindObjectOfType<WorldManager>();// Find existing instance in the scene 
-            }
-            return _instance; 
+            Destroy(this);
+            return;
         }
+        Instance = this;  
     }
     /*
     // Save all chunks to JSON

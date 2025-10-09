@@ -46,7 +46,7 @@ public class Container : MonoBehaviour
         Voxel block = new Voxel() { ID = 1 };
 
         Vector3[] faceVertices = new Vector3[4];
-        Vector2[] faceUvs = new Vector2[15];
+        Vector2[] faceUvs = new Vector2[16];
 
         VoxelColour voxelColor;
         Color voxelColorAlpha;
@@ -221,7 +221,7 @@ public class Container : MonoBehaviour
         }
     }
 
-    public static Voxel emptyVoxel = new Voxel() { ID = 0 }; // static empty voxel for easy access
+    public static Voxel emptyVoxel => new Voxel() { ID = 0 }; // static empty voxel for easy access
     // this section is for saving and loading chunk data
     public ChunkData GetChunkData(Vector2Int chunkPos)
     {
