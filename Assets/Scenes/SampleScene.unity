@@ -466,11 +466,11 @@ MonoBehaviour:
   - color: {r: 0.36966002, g: 0.6272108, b: 0.6698113, a: 0}
     metallic: 1
     smoothness: 0.75
-  chunkX: 4
+  chunkX: 20
   chunkY: 8
-  chunkZ: 4
+  chunkZ: 20
   chunkSize: 16
-  boxWorld: 0
+  boxWorld: 1
 --- !u!4 &1508554409
 Transform:
   m_ObjectHideFlags: 0
